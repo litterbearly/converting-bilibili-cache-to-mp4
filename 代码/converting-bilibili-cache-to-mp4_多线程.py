@@ -161,10 +161,6 @@ class GUI:
         if "" != self.path2.get():
             self.out_path = self.path2.get()
 
-    # def clear_selected_folder(self):  # 清空已选择的输入文件夹
-    #     self.path1.set("")
-    #     self.input_path = ""
-
     def convert_to_mp4(self):
         if not self.input_path:
             tkinter.messagebox.showwarning('警告', '请选择需要转换的缓存文件夹')
