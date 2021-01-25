@@ -33,7 +33,6 @@ def get_output_folder_name(filename_json):
 class GUI:
     input_path = ''
     out_path = ''
-    # path_ffmpeg = 'I:/python/哔哩哔哩缓存转mp4工具/ffmpeg/bin/ffmpeg.exe'
     path_ffmpeg = ''
     font_style = ("微软雅黑", 16, "bold")
     all_path_entry_json = []
@@ -65,22 +64,22 @@ class GUI:
         tk.Entry(self.root, textvariable=self.path0, width=90).place(x=100, y=140)  # 输入框绑定变量path
 
         # 选择缓存文件目录
-        self.path = tk.StringVar()  # 变量path
-        self.path.set(self.input_path)
+        self.path1 = tk.StringVar()  # 变量path
+        self.path1.set(self.input_path)
         tk.Label(self.root, text="课程视频缓存文件夹:", font=self.font_style) \
             .place(x=100, y=180)  # 输入框，标记，按键
         tk.Button(self.root, text="选择目录", font=self.font_style, command=self.select_in_path) \
             .place(x=500, y=180)
         tk.Button(self.root, text="清除", font=self.font_style, command=self.clear_selected_folder) \
             .place(x=650, y=180)
-        tk.Entry(self.root, textvariable=self.path, width=90).place(x=100, y=240)  # 输入框绑定变量path
+        tk.Entry(self.root, textvariable=self.path1, width=90).place(x=100, y=240)  # 输入框绑定变量path
 
         # 选择输出文件目录
         self.path2 = tk.StringVar()  # 变量path
         self.path2.set(self.out_path)
         tk.Label(self.root, text="输出目录:", font=self.font_style).place(x=100, y=280)  # 输入框，标记，按键
         tk.Button(self.root, text="选择目录", font=self.font_style, command=self.select_out_path) \
-            .place(x=600, y=280)
+            .place(x=500, y=280)
         tk.Entry(self.root, textvariable=self.path2, width=90).place(x=100, y=340)  # 输入框绑定变量path
 
         self.start_convert = tk.Button(self.root, text="开始转换", font=self.font_style, command=self.convert_to_mp4)
@@ -103,8 +102,8 @@ class GUI:
         self.path0.set(dict_json['path_ffmpeg'])
         self.path_ffmpeg = self.path0.get()
 
-        self.path.set(dict_json['input_path'])
-        self.input_path = self.path.get()
+        self.path1.set(dict_json['input_path'])
+        self.input_path = self.path1.get()
 
         self.path2.set(dict_json['out_path'])
         self.out_path = self.path2.get()
@@ -112,14 +111,17 @@ class GUI:
         self.root.update()
 
     def write_conf_json(self, ):
-        # 将当前配置写入到conf.json文件
-        json_file = open("conf.json", "w", encoding="UTF-8")
-        current_conf = {"path_ffmpeg": str(self.path_ffmpeg),
-                        "input_path": str(self.input_path),
-                        "out_path": str(self.out_path)
-                        }
-        json.dump(current_conf, json_file, ensure_ascii=False)  # ensure_ascii=False 不将字符转换为ascii码，即中文可保存
-        json_file.close()
+        if self.path_ffmpeg:
+            # 将当前配置写入到conf.json文件
+            json_file = open("conf.json", "w", encoding="UTF-8")
+            current_conf = {"path_ffmpeg": str(self.path_ffmpeg),
+                            "input_path": str(self.input_path),
+                            "out_path": str(self.out_path)
+                            }
+            json.dump(current_conf, json_file, ensure_ascii=False)  # ensure_ascii=False 不将字符转换为ascii码，即中文可保存
+            json_file.close()
+        else:
+            tkinter.messagebox.showwarning('警告', '未选择ffmpeg.exe文件')
 
     def select_ffmpeg_path(self):  # ffmpeg路径选择
         # 选择文件path_接收文件地址
@@ -132,15 +134,15 @@ class GUI:
         path_ = tkinter.filedialog.askdirectory()
 
         # path设置path_的值
-        if not self.path.get():
-            self.path.set(path_)
+        if not self.path1.get():
+            self.path1.set(path_)
         else:
-            self.path.set(self.path.get() + "," + path_)
-        self.input_path = self.path.get()
+            self.path1.set(self.path1.get() + "," + path_)
+        self.input_path = self.path1.get()
 
     def clear_selected_folder(self):  # 清空已选择的输入文件夹
-        self.path.set("")
-        self.input_path = self.path.get().split(",")
+        self.path1.set("")
+        self.input_path = ""
 
     def select_out_path(self):  # 输出目录选择
         # 选择文件path_接收文件地址
@@ -150,9 +152,17 @@ class GUI:
         if "" != self.path2.get():
             self.out_path = self.path2.get()
 
-    def convert_to_mp4(self):  #
+    # def clear_selected_folder(self):  # 清空已选择的输入文件夹
+    #     self.path1.set("")
+    #     self.input_path = ""
+
+    def convert_to_mp4(self):
         if not self.input_path:
             tkinter.messagebox.showwarning('警告', '请选择需要转换的缓存文件夹')
+        elif not self.path_ffmpeg:
+            tkinter.messagebox.showwarning('警告', '请选择ffmpeg.exe文件')
+        elif not self.out_path:
+            tkinter.messagebox.showwarning('警告', '请选择保存文件夹')
         else:
             self.start_convert.config(state='disabled')
 
