@@ -58,7 +58,7 @@ class GUI:
         self.path0 = tk.StringVar()  # 变量path
         self.path0.set(self.path_ffmpeg)
         tk.Label(self.root, text="ffmpeg.exe文件路径:", font=self.font_style) \
-            .place(x=100, y=80)  # 输入框，标记，按键
+            .place(x=95, y=90)  # 输入框，标记，按键
         tk.Button(self.root, text="文件选择", font=self.font_style, command=self.select_ffmpeg_path) \
             .place(x=500, y=80)
         tk.Entry(self.root, textvariable=self.path0, width=90).place(x=100, y=140)  # 输入框绑定变量path
@@ -66,21 +66,26 @@ class GUI:
         # 选择缓存文件目录
         self.path1 = tk.StringVar()  # 变量path
         self.path1.set(self.input_path)
-        tk.Label(self.root, text="课程视频缓存文件夹:", font=self.font_style) \
-            .place(x=100, y=180)  # 输入框，标记，按键
+        tk.Label(self.root, text="cache缓存文件夹:", font=self.font_style) \
+            .place(x=100, y=185)  # 输入框，标记，按键
         tk.Button(self.root, text="选择目录", font=self.font_style, command=self.select_in_path) \
             .place(x=500, y=180)
-        tk.Button(self.root, text="清除", font=self.font_style, command=self.clear_selected_folder) \
+        tk.Button(self.root, text="清除", font=self.font_style, command=self.clear_selected_in_folder) \
             .place(x=650, y=180)
-        tk.Entry(self.root, textvariable=self.path1, width=90).place(x=100, y=240)  # 输入框绑定变量path
+        tk.Entry(self.root, textvariable=self.path1, width=90)\
+            .place(x=100, y=240)  # 输入框绑定变量path
 
         # 选择输出文件目录
         self.path2 = tk.StringVar()  # 变量path
         self.path2.set(self.out_path)
-        tk.Label(self.root, text="输出目录:", font=self.font_style).place(x=100, y=280)  # 输入框，标记，按键
+        tk.Label(self.root, text="输出目录:", font=self.font_style)\
+            .place(x=100, y=285)  # 输入框，标记，按键
         tk.Button(self.root, text="选择目录", font=self.font_style, command=self.select_out_path) \
             .place(x=500, y=280)
-        tk.Entry(self.root, textvariable=self.path2, width=90).place(x=100, y=340)  # 输入框绑定变量path
+        tk.Button(self.root, text="清除", font=self.font_style, command=self.clear_selected_out_folder) \
+            .place(x=650, y=280)
+        tk.Entry(self.root, textvariable=self.path2, width=90)\
+            .place(x=100, y=340)  # 输入框绑定变量path
 
         self.start_convert = tk.Button(self.root, text="开始转换", font=self.font_style, command=self.convert_to_mp4)
         self.start_convert.place(x=650, y=400)
@@ -140,9 +145,13 @@ class GUI:
             self.path1.set(self.path1.get() + "," + path_)
         self.input_path = self.path1.get()
 
-    def clear_selected_folder(self):  # 清空已选择的输入文件夹
+    def clear_selected_in_folder(self):  # 清空已选择的输入文件夹
         self.path1.set("")
         self.input_path = ""
+
+    def clear_selected_out_folder(self):  # 清空已选择的输入文件夹
+        self.path2.set("")
+        self.out_path = ""
 
     def select_out_path(self):  # 输出目录选择
         # 选择文件path_接收文件地址
@@ -284,7 +293,8 @@ class GUI:
         print("转换失败列表：", wrong_list)
         tk.messagebox.showinfo(title='提示', message='转换完成')
         self.start_convert.config(state='normal')
-        self.clear_selected_folder()
+        self.clear_selected_in_folder()
+        self.clear_selected_out_folder()
 
     def pick(self, obj, file_name):
         try:
