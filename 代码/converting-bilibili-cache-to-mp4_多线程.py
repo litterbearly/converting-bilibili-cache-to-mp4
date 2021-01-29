@@ -174,12 +174,21 @@ class GUI:
             _thread.start_new_thread(self.convert, (self.path_ffmpeg, self.input_path, self.out_path))
 
     def convert(self, path_ffmpeg, in_path_list, out_path):
-        all_text = []
+        all_command_text = []
         wrong_list = []
+        self.all_path_entry_json = []
         for in_path in in_path_list.split(","):  # 遍历所有课程
-            self.all_path_entry_json = []
             self.scan_path(in_path + "/", file_name="entry.json")
+        try:
+            if not self.all_path_entry_json:
+                raise LookupError("已选择的目录中查找不到entry.json文件")
+        except LookupError as e:
+            tkinter.messagebox.showwarning('警告', repr(e))
+            self.start_convert.config(state='normal')
+            return None
+        if self.all_path_entry_json:
             for i, path_entry_json in enumerate(self.all_path_entry_json):
+
                 try:
                     self.path_audios = []
                     self.path_videos = []
@@ -187,11 +196,11 @@ class GUI:
                     self.scan_path(path_entry_json.replace("entry.json", ""), file_name="video.m4s")
 
                     # 当查找不到文件是报错 LookupError--"无效数据查询的基类"
-                    if self.path_audios == [] or self.path_videos == []:
-                        raise LookupError("查找不到文件")
+                    if not self.path_audios or not self.path_videos:
+                        raise LookupError("查找不到audio或video文件")
 
                     # 生成输出目录和输出文件名
-                    all_name, out_name = get_output_folder_name(path_entry_json.format(in_path))
+                    all_name, out_name = get_output_folder_name(path_entry_json)
 
                     tk.Canvas(self.root, width=700, height=30, bg="#f0f0f0").place(x=100, y=550)
                     tk.Label(self.root, text=all_name[:10] + " " * 5 + out_name[:15], font=self.font_style) \
@@ -203,20 +212,18 @@ class GUI:
                     command_text = path_ffmpeg + ' -i {} -i {} -c:v copy -strict experimental {} -n' \
                         .format(self.path_videos[0], self.path_audios[0], file_name_out)
                     # os.system(command_text)
-                    all_text.append(command_text)
+                    all_command_text.append(command_text)
                 except LookupError as e:
                     print("引发异常：", repr(e))
-                    wrong_list.append(path_entry_json)
                     print(wrong_list)
-
-                    input()
+                    wrong_list.append(path_entry_json)
         num = 0
-        while num < len(self.all_path_entry_json) - 1:
+        while num < len(all_command_text) - 1:
             fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
-            self.canvas.coords(fill_line, (0, 0, 500 * num / len(self.all_path_entry_json), 60))
+            self.canvas.coords(fill_line, (0, 0, 500 * num / len(all_command_text), 60))
 
-            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(self.all_path_entry_json),
-                                                                 (num + 1), len(self.all_path_entry_json))
+            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(all_command_text),
+                                                                 (num + 1), len(all_command_text))
             tk.Label(self.root, text=text_progress_statement, font=self.font_style) \
                 .place(x=230, y=450)  # 输入框，标记，按键
             flog_thread_read_1 = flog_thread_read_2 = flog_thread_read_3 = \
@@ -225,21 +232,21 @@ class GUI:
             if num < len(self.all_path_entry_json):
                 print(num, len(self.all_path_entry_json))
                 # 创建线程
-                thread_read_1 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_1 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_1.start()
                 flog_thread_read_1 = True
                 num += 1
             if num < len(self.all_path_entry_json):
                 # 创建线程
-                thread_read_2 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_2 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_2.start()
                 flog_thread_read_2 = True
                 num += 1
             if num < len(self.all_path_entry_json):
                 # 创建线程
-                thread_read_3 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_3 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_3.start()
                 thread_read_3.join()
@@ -247,21 +254,21 @@ class GUI:
                 num += 1
             if num < len(self.all_path_entry_json):
                 # 创建线程
-                thread_read_4 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_4 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_4.start()
                 flog_thread_read_4 = True
                 num += 1
             if num < len(self.all_path_entry_json):
                 # 创建线程
-                thread_read_5 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_5 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_5.start()
                 flog_thread_read_5 = True
                 num += 1
             if num < len(self.all_path_entry_json):
                 # 创建线程
-                thread_read_6 = threading.Thread(target=os.system, args=(all_text[num],))
+                thread_read_6 = threading.Thread(target=os.system, args=(all_command_text[num],))
                 # 启动线程
                 thread_read_6.start()
                 thread_read_6.join()
@@ -280,10 +287,10 @@ class GUI:
             if flog_thread_read_6:
                 thread_read_6.join()
             fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
-            self.canvas.coords(fill_line, (0, 0, 500 * num / len(self.all_path_entry_json), 60))
+            self.canvas.coords(fill_line, (0, 0, 500 * num / len(all_command_text), 60))
 
-            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(self.all_path_entry_json),
-                                                                 (num + 1), len(self.all_path_entry_json))
+            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(all_command_text),
+                                                                 (num + 1), len(all_command_text))
             tk.Label(self.root, text=text_progress_statement, font=self.font_style) \
                 .place(x=230, y=450)  # 输入框，标记，按键
         print("转换失败列表：", wrong_list)
