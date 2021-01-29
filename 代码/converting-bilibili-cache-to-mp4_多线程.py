@@ -200,15 +200,15 @@ class GUI:
                         raise LookupError("查找不到audio或video文件")
 
                     # 生成输出目录和输出文件名
-                    all_name, out_name = get_output_folder_name(path_entry_json)
+                    classes_name, class_name = get_output_folder_name(path_entry_json)
 
                     tk.Canvas(self.root, width=700, height=30, bg="#f0f0f0").place(x=100, y=550)
-                    tk.Label(self.root, text=all_name[:10] + " " * 5 + out_name[:15], font=self.font_style) \
+                    tk.Label(self.root, text=classes_name[:10] + " " * 5 + class_name[:15], font=self.font_style) \
                         .place(x=100, y=550)  # 输入框，标记，按键
 
-                    if not os.path.exists(out_path + "/" + "/" + all_name):
-                        os.makedirs(out_path + "/" + "/" + all_name)
-                    file_name_out = "{}/{}/{}.mp4".format(out_path, all_name, out_name)
+                    if not os.path.exists(out_path + "/" + classes_name):
+                        os.makedirs(out_path + "/" + classes_name)
+                    file_name_out = "{}/{}/{}.mp4".format(out_path, classes_name, class_name)
                     command_text = path_ffmpeg + ' -i {} -i {} -c:v copy -strict experimental {} -n' \
                         .format(self.path_videos[0], self.path_audios[0], file_name_out)
                     # os.system(command_text)
