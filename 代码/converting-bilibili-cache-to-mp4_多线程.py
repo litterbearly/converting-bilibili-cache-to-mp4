@@ -1,15 +1,15 @@
 import threading
+import time
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
 import os
 import json
-import _thread
 
 
 # 替换不合法的字符
 def replace_illegal_characters(str_name):  # 替换不合法的字符
-    list_illegal_characters = [" ", "<", ">", "?", "/", "\\", ":", "*", "|", "&"]  # 不合法字符列表
+    list_illegal_characters = [" ", "<", ">", "?", "/", "\\", ":", "*", "|", "&", "____", "___", "__"]  # 不合法字符列表
     for i in list_illegal_characters:
         str_name = str_name.replace(i, "_")
     return str_name
@@ -38,13 +38,13 @@ class GUI:
     all_path_entry_json = []
     path_audios = []
     path_videos = []
-    percentage_of_progress = "0"
 
+    # 向窗口添加元素
     def __init__(self):
         self.obj = None
         self.root = tk.Tk()
         self.root.minsize(800, 600)  # 窗口尺寸
-        self.root.title("哔哩哔哩缓存转Mp4工具多线程")
+        self.root.title("哔哩哔哩Cache缓存转Mp4工具多线程")
 
         # 从conf.json文件读取配置
         tk.Button(self.root, text="读取conf", font=self.font_style, command=self.read_conf_json) \
@@ -98,12 +98,15 @@ class GUI:
 
         self.root.mainloop()
 
+    # 从conf.json文件提取默认配置
     def read_conf_json(self, ):
-        # 从conf.json文件提取默认配置
         json_file = open("conf.json", "r", encoding="UTF-8")
         dict_json = json.load(json_file)
         json_file.close()
 
+        if not dict_json['path_ffmpeg']:
+            tkinter.messagebox.showwarning('提示', 'conf.json中无ffmpeg配置，请手动选择。')
+            return None
         self.path0.set(dict_json['path_ffmpeg'])
         self.path_ffmpeg = self.path0.get()
 
@@ -113,27 +116,29 @@ class GUI:
         self.path2.set(dict_json['out_path'])
         self.out_path = self.path2.get()
 
-        self.root.update()
+        self.root.update()  # 刷新页面
 
+    # 将当前配置覆盖写入到conf.json文件
     def write_conf_json(self, ):
         if self.path_ffmpeg:
-            # 将当前配置写入到conf.json文件
             json_file = open("conf.json", "w", encoding="UTF-8")
             current_conf = {"path_ffmpeg": str(self.path_ffmpeg),
                             "input_path": str(self.input_path),
                             "out_path": str(self.out_path)
                             }
-            json.dump(current_conf, json_file, ensure_ascii=False)  # ensure_ascii=False 不将字符转换为ascii码，即中文可保存
+            json.dump(current_conf, json_file, ensure_ascii=False)  # ensure_ascii=False 不将字符转换为ascii码，即直接保存中文
             json_file.close()
         else:
             tkinter.messagebox.showwarning('警告', '未选择ffmpeg.exe文件')
 
+    # 选择ffmpeg.exe路径
     def select_ffmpeg_path(self):  # ffmpeg路径选择
         # 选择文件path_接收文件地址
         path0_ = tkinter.filedialog.askopenfilename()
         self.path0.set(path0_)
         self.path_ffmpeg = self.path0.get()
 
+    # 添加输入目录
     def select_in_path(self):  # 输入目录添加
         # 选择文件path_接收文件地址
         path_ = tkinter.filedialog.askdirectory()
@@ -145,15 +150,13 @@ class GUI:
             self.path1.set(self.path1.get() + "," + path_)
         self.input_path = self.path1.get()
 
-    def clear_selected_in_folder(self):  # 清空已选择的输入文件夹
+    # 清空已选择的输入文件夹
+    def clear_selected_in_folder(self):
         self.path1.set("")
         self.input_path = ""
 
-    def clear_selected_out_folder(self):  # 清空已选择的输入文件夹
-        self.path2.set("")
-        self.out_path = ""
-
-    def select_out_path(self):  # 输出目录选择
+    # 输出目录选择
+    def select_out_path(self):
         # 选择文件path_接收文件地址
         path2_ = tkinter.filedialog.askdirectory()
         # path设置path_的值
@@ -161,6 +164,12 @@ class GUI:
         if "" != self.path2.get():
             self.out_path = self.path2.get()
 
+    # 清空已选择的输入文件夹
+    def clear_selected_out_folder(self):
+        self.path2.set("")
+        self.out_path = ""
+
+    # 开始处理线程
     def convert_to_mp4(self):
         if not self.input_path:
             tkinter.messagebox.showwarning('警告', '请选择需要转换的缓存文件夹')
@@ -170,11 +179,17 @@ class GUI:
             tkinter.messagebox.showwarning('警告', '请选择保存文件夹')
         else:
             self.start_convert.config(state='disabled')
+            thread_read_convert = threading.Thread(target=self.convert,
+                                                   args=(self.path_ffmpeg, self.input_path, self.out_path,))
+            thread_read_convert.start()
 
-            _thread.start_new_thread(self.convert, (self.path_ffmpeg, self.input_path, self.out_path))
-
+    # 扫描和转换
     def convert(self, path_ffmpeg, in_path_list, out_path):
+        start_time = time.time()
         all_command_text = []
+        all_classes_name = []
+        all_class_name = []
+
         wrong_list = []
         self.all_path_entry_json = []
         for in_path in in_path_list.split(","):  # 遍历所有课程
@@ -198,126 +213,98 @@ class GUI:
                     # 当查找不到文件是报错 LookupError--"无效数据查询的基类"
                     if not self.path_audios or not self.path_videos:
                         raise LookupError("查找不到audio或video文件")
+                    # 当查找不到文件是报错 LookupError--"无效数据查询的基类"
+                    if len(self.path_audios) > 1 or len(self.path_videos) > 1:
+                        raise LookupError("查找到多个audio或video文件")
 
                     # 生成输出目录和输出文件名
                     classes_name, class_name = get_output_folder_name(path_entry_json)
 
-                    tk.Canvas(self.root, width=700, height=30, bg="#f0f0f0").place(x=100, y=550)
-                    tk.Label(self.root, text=classes_name[:10] + " " * 5 + class_name[:15], font=self.font_style) \
-                        .place(x=100, y=550)  # 输入框，标记，按键
-
                     if not os.path.exists(out_path + "/" + classes_name):
                         os.makedirs(out_path + "/" + classes_name)
                     file_name_out = "{}/{}/{}.mp4".format(out_path, classes_name, class_name)
-                    command_text = path_ffmpeg + ' -i {} -i {} -c:v copy -strict experimental {} -n' \
+                    command_text = path_ffmpeg + ' -i {} -i {} -c:v copy -strict experimental {} -y' \
                         .format(self.path_videos[0], self.path_audios[0], file_name_out)
-                    # os.system(command_text)
+
+                    all_classes_name.append(classes_name)
+                    all_class_name.append(class_name)
                     all_command_text.append(command_text)
                 except LookupError as e:
                     print("引发异常：", repr(e))
-                    print(wrong_list)
                     wrong_list.append(path_entry_json)
-        num = 0
-        while num < len(all_command_text) - 1:
-            fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
-            self.canvas.coords(fill_line, (0, 0, 500 * num / len(all_command_text), 60))
+            # print(sorted(set(all_classes_name), key=all_classes_name.index), "\n", all_class_name)
+            # input()
 
-            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(all_command_text),
-                                                                 (num + 1), len(all_command_text))
+        for num in range(len(all_command_text)//2):
+            # 创建线程
+            thread_read_1 = threading.Thread(target=os.system, args=(all_command_text[2*num],))
+            thread_read_2 = threading.Thread(target=os.system, args=(all_command_text[2*num+1],))
+
+            # 启动线程
+            thread_read_1.start()
+            thread_read_2.start()
+
+            # 线程结束
+            thread_read_1.join()
+            thread_read_2.join()
+
+            # 转换进度百分比展示
+            text_progress_statement = "{:4.2f}%    {:2d}/{}". \
+                format(100 * (2*(num+1)) / len(all_command_text), (2*(num+1)), len(all_command_text))
             tk.Label(self.root, text=text_progress_statement, font=self.font_style) \
-                .place(x=230, y=450)  # 输入框，标记，按键
-            flog_thread_read_1 = flog_thread_read_2 = flog_thread_read_3 = \
-                flog_thread_read_4 = flog_thread_read_5 = flog_thread_read_6 = False
+                .place(x=400, y=450)  # 输入框，标记，按键
 
-            if num < len(self.all_path_entry_json):
-                print(num, len(self.all_path_entry_json))
-                # 创建线程
-                thread_read_1 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_1.start()
-                flog_thread_read_1 = True
-                num += 1
-            if num < len(self.all_path_entry_json):
-                # 创建线程
-                thread_read_2 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_2.start()
-                flog_thread_read_2 = True
-                num += 1
-            if num < len(self.all_path_entry_json):
-                # 创建线程
-                thread_read_3 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_3.start()
-                thread_read_3.join()
-                flog_thread_read_3 = True
-                num += 1
-            if num < len(self.all_path_entry_json):
-                # 创建线程
-                thread_read_4 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_4.start()
-                flog_thread_read_4 = True
-                num += 1
-            if num < len(self.all_path_entry_json):
-                # 创建线程
-                thread_read_5 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_5.start()
-                flog_thread_read_5 = True
-                num += 1
-            if num < len(self.all_path_entry_json):
-                # 创建线程
-                thread_read_6 = threading.Thread(target=os.system, args=(all_command_text[num],))
-                # 启动线程
-                thread_read_6.start()
-                thread_read_6.join()
-                flog_thread_read_6 = True
-                num += 1
-            if flog_thread_read_1:
-                thread_read_1.join()
-            if flog_thread_read_2:
-                thread_read_2.join()
-            if flog_thread_read_3:
-                thread_read_3.join()
-            if flog_thread_read_4:
-                thread_read_4.join()
-            if flog_thread_read_5:
-                thread_read_5.join()
-            if flog_thread_read_6:
-                thread_read_6.join()
-            fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")
-            self.canvas.coords(fill_line, (0, 0, 500 * num / len(all_command_text), 60))
+            # 转换进度条
+            tk.Canvas(self.root, width=700, height=30, bg="#f0f0f0").place(x=100, y=550)  # 覆盖前一步进度条，使其与窗口底色相同
+            fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")  # 生成当前步的进度条
+            self.canvas.coords(fill_line, (0, 0, 500 * (2*(num+1)) / len(all_command_text), 60))
 
-            text_progress_statement = "{:4.2f}%    {}/{}".format(100 * (num + 1) / len(all_command_text),
-                                                                 (num + 1), len(all_command_text))
+            # 当前转换文件名
+            tk.Label(self.root,
+                     text=all_classes_name[(2*num+1)][:10] + " " * 5 + all_class_name[(2*num+1)][:15],
+                     font=self.font_style).place(x=100, y=550)  # 输入框，标记，按键
+        if len(all_command_text) % 2:
+            os.system(all_command_text[-1])
+            # 转换进度百分比展示
+            text_progress_statement = "{:4.2f}%    {}/{}". \
+                format(100, len(all_command_text), len(all_command_text))
             tk.Label(self.root, text=text_progress_statement, font=self.font_style) \
-                .place(x=230, y=450)  # 输入框，标记，按键
-        print("转换失败列表：", wrong_list)
+                .place(x=400, y=450)  # 输入框，标记，按键
+
+            # 转换进度条
+            tk.Canvas(self.root, width=700, height=30, bg="#f0f0f0").place(x=100, y=550)  # 覆盖前一步进度条，使其与窗口底色相同
+            fill_line = self.canvas.create_rectangle(1.5, 1.5, 0, 23, width=0, fill="green")  # 生成当前步的进度条
+            self.canvas.coords(fill_line, (0, 0, 500 * 1, 60))
+
+            # 当前转换文件名
+            tk.Label(self.root,
+                     text=all_classes_name[-1][:10] + " " * 5 + all_class_name[-1][:15],
+                     font=self.font_style).place(x=100, y=550)  # 输入框，标记，按键
+
+        if wrong_list:
+            print("查找audio或video文件失败列表：", wrong_list)
+        end_time = time.time()
+        print((end_time - start_time) / 60, " 分钟")
         tk.messagebox.showinfo(title='提示', message='转换完成')
         self.start_convert.config(state='normal')
         self.clear_selected_in_folder()
         self.clear_selected_out_folder()
 
-    def pick(self, obj, file_name):
-        try:
-            if obj[-len(file_name):] == file_name:
-                if file_name == "audio.m4s":
-                    if obj not in self.path_audios:
-                        self.path_audios.append(obj)
-                elif file_name == "video.m4s":
-                    if obj not in self.path_videos:
-                        self.path_videos.append(obj)
-                elif file_name == "entry.json":
-                    if obj not in self.all_path_entry_json:
-                        self.all_path_entry_json.append(obj)
-        except:
-            return None
-
+    # 递归法查找对应名称的文件
     def scan_path(self, path, file_name="entry.json"):
         for obj in os.listdir(path):
             if os.path.isfile(path + obj):
-                self.pick(path + obj, file_name)
+                file = path + obj
+                if file[-len(file_name):] == file_name:
+                    if file_name == "audio.m4s":
+                        if file not in self.path_audios:
+                            self.path_audios.append(file)
+                    if file_name == "video.m4s":
+                        if file not in self.path_videos:
+                            self.path_videos.append(file)
+                    if file_name == "entry.json":
+                        if file not in self.all_path_entry_json:
+                            self.all_path_entry_json.append(file)
             elif os.path.isdir(path + obj):
                 self.scan_path(path + obj + "/", file_name)
 
