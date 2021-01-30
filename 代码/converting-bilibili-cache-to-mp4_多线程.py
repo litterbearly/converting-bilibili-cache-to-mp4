@@ -203,7 +203,6 @@ class GUI:
             return None
         if self.all_path_entry_json:
             for i, path_entry_json in enumerate(self.all_path_entry_json):
-
                 try:
                     self.path_audios = []
                     self.path_videos = []
