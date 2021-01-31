@@ -9,9 +9,9 @@ import json
 
 # 替换不合法的字符
 def replace_illegal_characters(str_name):  # 替换不合法的字符
-    list_illegal_characters = [" ", "<", ">", "?", "/", "\\", ":", "*", "|", "&", "____", "___", "__"]  # 不合法字符列表
-    for i in list_illegal_characters:
-        str_name = str_name.replace(i, "_")
+    illegal_characters = [" ", "<", ">", "?", "/", "\\", ":", "*", "|", "&", "____", "___", "__"]  # 不合法字符列表
+    for characters in illegal_characters:
+        str_name = str_name.replace(characters, "_")
     return str_name
 
 
